@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>檔案上傳與轉檔示範</title>
+</head>
+<body>
+  <h2>選擇檔案</h2>
+  <input type="file" id="file1"><br>
+  <input type="file" id="file2"><br>
+  <input type="file" id="file3"><br><br>
+
+  <button onclick="uploadFiles()">上傳</button>
+
+  <hr>
+
+  <h2>檔案連結</h2>
+  <a id="fileLink" href="https://img.4gamers.com.tw/news-image/8043dc2a-bcfa-4265-934d-4657d05b67a3.jpg" download target="_blank">模擬下載QBJ App民眾上傳資料存在DBserver的檔案網址</a><br><br>
+
+  <input type="text" id="url1" placeholder="可輸入自訂下載連結測試 1" value="https://uc.udn.com.tw/photo/2023/12/23/0/28505524.jpg" style="width: 80%;"><br><br>
+  <input type="text" id="url2" placeholder="可輸入自訂下載連結測試 2" style="width: 80%;"><br><br>
+
+  <button onclick="convertAndUpload()">轉檔至上方的IPL上傳欄位並自動上傳</button>
+
+  <script>
+    function uploadFiles() {
+      const files = [
+        document.getElementById("file1").files[0],
+        document.getElementById("file2").files[0],
+        document.getElementById("file3").files[0]
+      ];
+
+      let message = "即將上傳的檔案資訊：\n";
+
+      files.forEach((file, index) => {
+        if (file) {
+          message += `檔案 ${index + 1}:\n`;
+          message += `- 名稱：${file.name}\n`;
+          message += `- 類型：${file.type}\n`;
+          message += `- 大小：${file.size} bytes\n\n`;
+        }
+      });
+
+      alert(message);
+    }
+
+    async function fetchFile(url) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+
+        // 嘗試從網址取得檔名
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/');
+        const filename = pathParts[pathParts.length - 1] || "downloaded_file";
+
+        return new File([blob], filename, { type: blob.type });
+      } catch (error) {
+        console.error("下載失敗：", url, error);
+        alert("下載失敗：" + url);
+        return null;
+      }
+    }
+
+    async function convertAndUpload() {
+      const urls = [];
+
+      // 固定連結
+      const staticUrl = document.getElementById("fileLink").href;
+      urls.push(staticUrl);
+
+      // 使用者輸入連結
+      const url1 = document.getElementById("url1").value.trim();
+      const url2 = document.getElementById("url2").value.trim();
+
+      if (url1) urls.push(url1);
+      if (url2) urls.push(url2);
+
+      const inputs = [
+        document.getElementById("file1"),
+        document.getElementById("file2"),
+        document.getElementById("file3")
+      ];
+
+      let inserted = false;
+
+      for (let i = 0; i < urls.length; i++) {
+        const file = await fetchFile(urls[i]);
+        if (!file) continue;
+
+        for (let input of inputs) {
+          if (!input.files.length) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            inserted = true;
+            break;
+          }
+        }
+      }
+
+      if (inserted) {
+        uploadFiles();
+      } else {
+        alert("三個上傳欄位都已有檔案，無法放入下載檔案。");
+      }
+    }
+  </script>
+</body>
+</html>
